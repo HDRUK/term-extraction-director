@@ -121,6 +121,9 @@ class Dataset(BaseModel):
     structuralMetadata: list[StructuralMetadata]
 
 def preprocess_dataset(dataset: Dataset):
+    """Extract fields containing free text from the dataset and return them as 
+    one string.
+    """
     title = dataset.summary.title
     abstract = dataset.summary.abstract
     description = dataset.summary.description
@@ -138,25 +141,39 @@ def preprocess_dataset(dataset: Dataset):
     
     table_descriptions = set(table_descriptions)
     column_descriptions = set(column_descriptions)
-    all_structural_descriptions = ''
+    all_descriptions = ''
     if len(table_descriptions) > 0:
-        all_structural_descriptions = all_structural_descriptions + ' '.join(table_descriptions)
+        all_descriptions = all_descriptions + ' '.join(table_descriptions)
     if len(column_descriptions) > 0:
-        all_structural_descriptions = all_structural_descriptions + ' ' + ' '.join(column_descriptions)
+        all_descriptions = all_descriptions + ' ' + ' '.join(column_descriptions)
     # Add observation description when it is included in GDM
     # obs_description = dataset.observations.disambiguating_description
 
-    document = title + ' ' + abstract + ' ' + description + ' ' + keywords + ' ' + all_structural_descriptions
+    document = title + ' ' + abstract + ' ' + description + ' ' + keywords + ' ' + all_descriptions
     return document
 
 def call_medcat(document: str):
+    """Call the MedCATservice to perform named entity recognition on document and 
+    return the response json.
+    """
     api_url = "http://%s:%s/api/process" % (MEDCAT_HOST, MEDCAT_PORT)
-    response = requests.post(api_url, json={"content":{"text": document}}, headers={"Content-Type": "application/json"})
+    response = requests.post(
+        api_url, 
+        json={"content":{"text": document}}, 
+        headers={"Content-Type": "application/json"}
+    )
     return response.json()
 
 def call_medcat_bulk(documents: list[str]):
+    """Call the MedCATservice to perform named entity recognition on documents 
+    and return the response json.
+    """
     api_url = "http://%s:%s/api/process_bulk" % (MEDCAT_HOST, MEDCAT_PORT)
-    response = requests.post(api_url, json={"content":[{"text": doc} for doc in documents]}, headers={"Content-Type": "application/json"})
+    response = requests.post(
+        api_url, 
+        json={"content":[{"text": doc} for doc in documents]}, 
+        headers={"Content-Type": "application/json"}
+    )
     return response.json()
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
