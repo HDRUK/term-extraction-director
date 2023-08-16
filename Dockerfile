@@ -7,8 +7,8 @@ COPY . .
 
 WORKDIR /home/
 RUN pip install pip --upgrade 
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.ted_app.main:ted", "--host", "0.0.0.0"]
+CMD ["uvicorn", "src.ted_app.main:ted", "--host", "0.0.0.0","--reload"]

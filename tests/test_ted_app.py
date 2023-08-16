@@ -40,13 +40,13 @@ def test_index_dataset(mock_post):
     assert response.json() == {"result": "mocked"}
 
 @patch('ted_app.main.requests.post')
-def test_index_dataset(mock_post):
+def test_index_datasets(mock_post):
     mock_response = Response()
     mock_response.status_code = 200    
     mock_response._content = b'[{"result":"mocked"},{"second_result":"mocked"}]'
     mock_post.return_value = mock_response
 
-    test_dataset = helpers.get_test_json_dataset()
+    test_dataset = helpers.get_test_json_dataset() 
 
     response = client.post("/datasets_bulk", json=[test_dataset, test_dataset])
     assert response.status_code == 200

@@ -1,4 +1,4 @@
-from ted_app.main import (
+from ted_app.dataset_model import (
     Required, 
     Publisher, 
     Summary, 
@@ -16,6 +16,7 @@ from ted_app.main import (
     StructuralMetadata,
     Dataset
 )
+from fastapi.encoders import jsonable_encoder
 
 def get_test_dataset():
     required = Required(
@@ -126,100 +127,4 @@ def get_test_dataset():
     return dataset
 
 def get_test_json_dataset():
-    test_dataset = {
-        "required": {
-            "gatewayId": "1111",
-            "gatewayPid": "1a1a1a1",
-            "issued": "2023-01-01T00:00:00.000Z",
-            "modified": "2023-01-01T00:00:00.000Z",
-            "revisions": []
-        },
-        "summary": {
-            "title": "dataset test",
-            "shortTitle": "dataset test",
-            "doiName": "",
-            "abstract": "this dataset is a dataset",
-            "description": "and here we have a longer description of the dataset",
-            "keywords": "test, dataset",
-            "controlledKeywords": "",
-            "contactPoint": "",
-            "datasetType": "",
-            "publisher": {
-                "publisherName": "",
-                "publisherGatewayId": ""
-            } 
-        },
-        "coverage": {
-            "pathway": "secondary care",
-            "physicalSampleAvailability": "DNA",
-            "spatial": "UK",
-            "followup": "OTHER",
-            "typicalAgeRange": "0-150"
-        },
-        "provenance": {
-            "origin": {
-                "purpose": "STUDY",
-                "source": "MACHINE GENERATED",
-                "collectionSituation": "PRIMARY CARE"
-            },
-            "temporal": {
-                "endDate": "2020-01-01",
-                "startDate": "2018-01-01",
-                "timeLag": "",
-                "accrualPeriodicity": "MONTHLY",
-                "distributionReleaseDate": "2020-02-01"
-            }
-        },
-        "accessibility": {
-            "access": {
-                "deliveryLeadTime": "1 MONTH",
-                "jurisdiction": "GB",
-                "dataController": "TEST CONTROLLER",
-                "dataProcessor": "TEST PROCESSOR",
-                "accessRights": "http://some_url.co.uk",
-                "accessService": "Some more information about test controller",
-                "accessRequestCost": "Fees description"
-            },
-            "usage": {
-                "dataUseLimitation": "GENERAL RESEARCH USE",
-                "dataUseRequirement": "PROJECT SPECIFIC",
-                "resourceCreator": "Some information about project"
-            },
-            "formatAndStandards": {
-                "vocabularyEncodingSchemes": "OTHER",
-                "conformsTo": "OTHER",
-                "languages": "en",
-                "formats": "CSV"
-            }
-        },
-        "linkage": {
-            "IsGeneratedUsing": "Something",
-            "associatedMedia": "http://someurl.com",
-            "dataUses": "",
-            "isReferenceIn": "http://some_publications_url.com",
-            "tools": "www.github.com/something",
-            "datasetLinkage": {
-                "isDerivedFrom": "multiple",
-                "isPartOf": "data source",
-                "isMemberOf": "",
-                "linkedDatasets": "Name of other dataset"
-            },
-            "investigations": "http://some.research.project.co.uk"
-        },
-        "observations": [],
-        "structuralMetadata": [
-            {
-                "name": "table_name",
-                "description": "description of a dataset table",
-                "elements": [
-                    {
-                        "name": "column_name",
-                        "description": "description of column",
-                        "dataType": "string",
-                        "sensitive": True
-                    }
-                ]
-            }
-        ]
-    }
-    return test_dataset
+    return jsonable_encoder(get_test_dataset())
