@@ -26,6 +26,13 @@ def test_preprocess_dataset():
     assert document.count("column") == 1
     assert document.count("table") == 1
 
+def test_extract_medical_entities():
+    fake_annotations = helpers.get_test_annotations()
+    medical_terms, other_terms = extract_medical_entities(fake_annotations)
+
+    assert len(medical_terms) == 1
+    assert len(other_terms) == 1
+
 @patch('ted_app.main.requests.post')
 def test_index_dataset(mock_post):
     mock_response = Response()
