@@ -1,5 +1,6 @@
 from fastapi import FastAPI, status
 from .dataset_model import Dataset
+from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
 import requests
@@ -74,6 +75,18 @@ def call_medcat_bulk(documents: list[str]):
     )
     return response.json()
 
+def extract_medical_entities(annotations: dict):
+    medical_terms = {}
+    other_terms = {}
+    for annotation in annotations:
+        for (key, entity) in annotation.items():
+            if entity["meta_anns"]["Status"]["value"] == "Affirmed":
+                if any([t in MEDICAL_CATEGORIES for t in entity["types"]]):
+                    medical_terms[key] = entity
+                else:
+                    other_terms[key] = entity
+    return medical_terms, other_terms
+
 @ted.get("/status", status_code=status.HTTP_200_OK)
 def read_status():
     return {"message": "Resource Available"}
@@ -83,17 +96,24 @@ def index_dataset(dataset: Dataset):
     st = time.time()
     document = preprocess_dataset(dataset)
     medcat_resp = call_medcat(document)
+    medical_terms, other_terms = extract_medical_entities(medcat_resp["result"]["annotations"])
     et = time.time()
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
-    return medcat_resp
+    return {"medical_terms": medical_terms, "other_terms": other_terms}
 
 @ted.post("/datasets_bulk", status_code=status.HTTP_200_OK)
 def index_datasets_bulk(datasets: list[Dataset]):
     st = time.time()
     documents = [preprocess_dataset(dataset) for dataset in datasets]
     medcat_resp = call_medcat_bulk(documents)
+    medical_terms = []
+    other_terms = []
+    for dataset_resp in medcat_resp["result"]:
+        dataset_medical_terms, dataset_other_terms = extract_medical_entities(dataset_resp["annotations"])
+        medical_terms.append(dataset_medical_terms)
+        other_terms.append(dataset_other_terms)
     et = time.time()
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
-    return medcat_resp
+    return {"medical_terms": medical_terms, "other_terms": other_terms}
