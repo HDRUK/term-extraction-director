@@ -130,89 +130,106 @@ def get_test_json_dataset():
     return jsonable_encoder(get_test_dataset())
 
 def get_test_annotations():
+    return [
+        {
+            "1": {
+                "pretty_name": "Diabetes", 
+                "cui": "C0000", 
+                "type_ids": ["T000"], 
+                "types": ["Disease or Syndrome"], 
+                "source_value": "diabetes", 
+                "detected_name": "diabetes", 
+                "acc": 0.65, 
+                "context_similarity": 0.65, 
+                "start": 9, 
+                "end": 17, 
+                "icd10": [], 
+                "ontologies": [], 
+                "snomed": [], 
+                "id": 1, 
+                "meta_anns": {
+                    "Status": {
+                        "value": "Affirmed", 
+                        "confidence": 0.99, 
+                        "name": "Status"
+                    }
+                } 
+            }
+        },
+        {
+            "2": {
+                "pretty_name": "Data Set", 
+                "cui": "C0000", 
+                "type_ids": ["T000"], 
+                "types": ["Itellectual Product"], 
+                "source_value": "dataset", 
+                "detected_name": "dataset", 
+                "acc": 0.65, 
+                "context_similarity": 0.65, 
+                "start": 18, 
+                "end": 25, 
+                "icd10": [], 
+                "ontologies": [], 
+                "snomed": [], 
+                "id": 1, 
+                "meta_anns": {
+                    "Status": {
+                        "value": "Affirmed", 
+                        "confidence": 0.99, 
+                        "name": "Status"
+                    }
+                } 
+            }
+        },
+        {
+            "3": {
+                "pretty_name": "Documents", 
+                "cui": "C0000", 
+                "type_ids": ["T000"], 
+                "types": ["Itellectual Product"], 
+                "source_value": "document", 
+                "detected_name": "document", 
+                "acc": 0.65, 
+                "context_similarity": 0.65, 
+                "start": 30, 
+                "end": 38, 
+                "icd10": [], 
+                "ontologies": [], 
+                "snomed": [], 
+                "id": 1, 
+                "meta_anns": {
+                    "Status": {
+                        "value": "Other", 
+                        "confidence": 0.99, 
+                        "name": "Status"
+                    }
+                } 
+            }
+        }
+    ]
+
+def get_test_medcat_response():
     return {
         "result": {
             "text": "original diabetes dataset not document", 
-            "annotations": [
-                {
-                    "1": {
-                        "pretty_name": "Diabetes", 
-                        "cui": "C0000", 
-                        "type_ids": ["T000"], 
-                        "types": ["Disease or Syndrome"], 
-                        "source_value": "diabetes", 
-                        "detected_name": "diabetes", 
-                        "acc": 0.65, 
-                        "context_similarity": 0.65, 
-                        "start": 9, 
-                        "end": 17, 
-                        "icd10": [], 
-                        "ontologies": [], 
-                        "snomed": [], 
-                        "id": 1, 
-                        "meta_anns": {
-                            "Status": {
-                                "value": "Affirmed", 
-                                "confidence": 0.99, 
-                                "name": "Status"
-                            }
-                        } 
-                    }
-                },
-                {
-                    "2": {
-                        "pretty_name": "Data Set", 
-                        "cui": "C0000", 
-                        "type_ids": ["T000"], 
-                        "types": ["Itellectual Product"], 
-                        "source_value": "dataset", 
-                        "detected_name": "dataset", 
-                        "acc": 0.65, 
-                        "context_similarity": 0.65, 
-                        "start": 18, 
-                        "end": 25, 
-                        "icd10": [], 
-                        "ontologies": [], 
-                        "snomed": [], 
-                        "id": 1, 
-                        "meta_anns": {
-                            "Status": {
-                                "value": "Affirmed", 
-                                "confidence": 0.99, 
-                                "name": "Status"
-                            }
-                        } 
-                    }
-                },
-                {
-                    "3": {
-                        "pretty_name": "Documents", 
-                        "cui": "C0000", 
-                        "type_ids": ["T000"], 
-                        "types": ["Itellectual Product"], 
-                        "source_value": "document", 
-                        "detected_name": "document", 
-                        "acc": 0.65, 
-                        "context_similarity": 0.65, 
-                        "start": 30, 
-                        "end": 38, 
-                        "icd10": [], 
-                        "ontologies": [], 
-                        "snomed": [], 
-                        "id": 1, 
-                        "meta_anns": {
-                            "Status": {
-                                "value": "Other", 
-                                "confidence": 0.99, 
-                                "name": "Status"
-                            }
-                        } 
-                    }
-                }
-            ], 
+            "annotations": get_test_annotations(), 
             "success": True, 
             "timestamp": "2023-08-22T00:00:00.000+00:00", 
             "elapsed_time": 0.2
         },
+        "medcat_info": {}
+    }
+
+def get_test_bulk_medcat_response():
+    return {
+        "result": [
+            {
+                "text": "original diabetes dataset not document", 
+                "annotations": get_test_annotations(), 
+                "success": True, 
+                "timestamp": "2023-08-22T00:00:00.000+00:00", 
+                "elapsed_time": 0.2,
+            }
+        ],
         "medcat_info": {}
     }
