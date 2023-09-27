@@ -233,3 +233,16 @@ def get_test_bulk_medcat_response():
         ],
         "medcat_info": {}
     }
+
+def get_test_mvcm_response():
+    return [
+        {
+            'closely_mapped_term': 'Diabetes (Type I or II)', 
+            'concept_id': 000000, 
+            'relationship_type': 'OMOP_hit', 
+            'search_term': 'diabetes', 
+            'similarity_score': 100.0, 
+            'vocabulary_concept_code': 'AB1111-0', 
+            'vocabulary_id': 'LOINC'
+        }
+    ]
