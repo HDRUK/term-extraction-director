@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from requests.models import Response
 import json
 
@@ -40,10 +40,10 @@ def test_extract_medical_entities():
 
 @patch('ted_app.main.requests.post')
 def test_index_dataset(mock_post):
-    mock_response = Response()
-    mock_response.status_code = 200    
-    mock_response._content = json.dumps(helpers.get_test_medcat_response()).encode('utf-8')
-    mock_post.return_value = mock_response
+    mock_responses = [Mock(), Mock()]
+    mock_responses[0].json.return_value = helpers.get_test_medcat_response()
+    mock_responses[1].json.return_value = helpers.get_test_mvcm_response()
+    mock_post.side_effect = mock_responses
 
     test_dataset = helpers.get_test_json_dataset()
 
@@ -51,21 +51,26 @@ def test_index_dataset(mock_post):
     assert response.status_code == 200
 
     response_dict = response.json()
-    assert set(["medical_terms", "other_terms"]).issubset(response_dict.keys())
+    assert response_dict == {
+        "id": "1111", 
+        "extracted_terms": ["Diabetes", "Diabetes (Type I or II)", "Data Set"]
+    }
 
 @patch('ted_app.main.requests.post')
 def test_index_datasets(mock_post):
-    mock_response = Response()
-    mock_response.status_code = 200    
-    mock_response._content = json.dumps(helpers.get_test_bulk_medcat_response()).encode('utf-8')
-    mock_post.return_value = mock_response
+    mock_responses = [Mock(), Mock()]
+    mock_responses[0].json.return_value = helpers.get_test_bulk_medcat_response()
+    mock_responses[1].json.return_value = helpers.get_test_mvcm_response()
+    mock_post.side_effect = mock_responses
 
     test_dataset = helpers.get_test_json_dataset() 
 
     response = client.post("/datasets_bulk", json=[test_dataset, test_dataset])
     assert response.status_code == 200
 
-    response_dict = response.json()
-    assert set(["medical_terms", "other_terms"]).issubset(response_dict.keys())
-    assert isinstance(response_dict["medical_terms"], list)
-    assert isinstance(response_dict["other_terms"], list)
+    response_arr = response.json()
+    for dataset_resp in response_arr:
+        assert dataset_resp == {
+        "id": "1111", 
+        "extracted_terms": ["Diabetes", "Diabetes (Type I or II)", "Data Set"]
+    }
