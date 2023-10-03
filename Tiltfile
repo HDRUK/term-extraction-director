@@ -1,0 +1,21 @@
+## TED Tiltfile
+##
+## Loki Sinclair <loki.sinclair@hdruk.ac.uk>
+##
+
+# Load in any locally set config
+cfg = read_json('tiltconf.json')
+
+docker_build(
+    ref='hdruk/' + cfg.get('name'),
+    context='.',
+    live_update=[
+        sync('.', '/home'),
+    ]
+)
+
+k8s_yaml('chart/' + cfg.get('name') + '/' + cfg.get('name') + '.yaml')
+k8s_resource(
+    cfg.get('name'),
+    port_forwards=8001
+)
