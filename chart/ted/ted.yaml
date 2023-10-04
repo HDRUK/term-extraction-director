@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ted
+spec:
+  containers:
+    - name: ted
+      image: hdruk/ted:latest
+      ports:
+        - containerPort: 8000
