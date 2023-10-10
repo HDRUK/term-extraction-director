@@ -5,6 +5,9 @@ import time
 import os
 import requests
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 MEDCAT_HOST = os.getenv('MEDCAT_HOST')
 MEDCAT_PORT = os.getenv('MEDCAT_PORT')
@@ -38,7 +41,7 @@ def preprocess_dataset(dataset: Dataset):
     column_descriptions = [
         element.description 
         for table in dataset.structuralMetadata 
-        for element in table.elements 
+        for element in table.columns 
         if isinstance(element.description, str)
     ]
     
@@ -59,7 +62,7 @@ def call_medcat(document: str):
     """Call the MedCATservice to perform named entity recognition on document and 
     return the response json.
     """
-    api_url = "http://%s:%s/api/process" % (MEDCAT_HOST, MEDCAT_PORT)
+    api_url = "https://%s/api/process" % (MEDCAT_HOST)
     response = requests.post(
         api_url, 
         json={"content":{"text": document}}, 
@@ -71,7 +74,7 @@ def call_medcat_bulk(documents: list[str]):
     """Call the MedCATservice to perform named entity recognition on documents 
     and return the response json.
     """
-    api_url = "http://%s:%s/api/process_bulk" % (MEDCAT_HOST, MEDCAT_PORT)
+    api_url = "https://%s/api/process_bulk" % (MEDCAT_HOST)
     response = requests.post(
         api_url, 
         json={"content":[{"text": doc} for doc in documents]}, 
@@ -112,7 +115,11 @@ def extract_and_expand_entities(medcat_annotations: dict):
     list of strings containing all the named entities and related medical concepts.
     """
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
-    expanded_terms_list = call_mvcm(medical_terms)
+    try:
+        expanded_terms_list = call_mvcm(medical_terms)
+    except:
+        print("probably couldn't find mvcm\n")
+        expanded_terms_list = []
     other_terms_list = [t['pretty_name'] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
