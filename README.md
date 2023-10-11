@@ -22,7 +22,7 @@ POST <TED_HOST>/datasets
 # Configuration
 
 `.env.example` contains the environment variables that need to be set to enable TED to communicate with other service deployments.
-If running locally the environment variables `MEDCAT_HOST` and `MVCM_HOST` should include the port (e.g. localhost:8000).
+If running locally the environment variables `MEDCAT_HOST` and `MVCM_HOST` should include the port (e.g. http://localhost:8000).
 
 # Testing
 
