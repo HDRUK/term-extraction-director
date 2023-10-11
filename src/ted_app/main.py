@@ -7,9 +7,7 @@ import requests
 import logging
 
 MEDCAT_HOST = os.getenv('MEDCAT_HOST')
-MEDCAT_PORT = os.getenv('MEDCAT_PORT')
 MVCM_HOST = os.getenv('MVCM_HOST')
-MVCM_PORT = os.getenv('MVCM_PORT')
 MVCM_USER = os.getenv('MVCM_USER')
 MVCM_PASSWORD = os.getenv('MVCM_PASSWORD')
 
@@ -59,7 +57,7 @@ def call_medcat(document: str):
     """Call the MedCATservice to perform named entity recognition on document and 
     return the response json.
     """
-    api_url = "http://%s:%s/api/process" % (MEDCAT_HOST, MEDCAT_PORT)
+    api_url = "%s/api/process" % (MEDCAT_HOST)
     response = requests.post(
         api_url, 
         json={"content":{"text": document}}, 
@@ -71,7 +69,7 @@ def call_medcat_bulk(documents: list[str]):
     """Call the MedCATservice to perform named entity recognition on documents 
     and return the response json.
     """
-    api_url = "http://%s:%s/api/process_bulk" % (MEDCAT_HOST, MEDCAT_PORT)
+    api_url = "%s/api/process_bulk" % (MEDCAT_HOST)
     response = requests.post(
         api_url, 
         json={"content":[{"text": doc} for doc in documents]}, 
@@ -97,7 +95,7 @@ def call_mvcm(medical_terms: dict):
     medical concepts.
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
-    mvcm_url = "http://%s:%s/API/OMOP_search" % (MVCM_HOST, MVCM_PORT)
+    mvcm_url = "%s/API/OMOP_search" % (MVCM_HOST)
     response = requests.post(
         mvcm_url,
         json={"search_term": pretty_names, "search_threshold": 80},
