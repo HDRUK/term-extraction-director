@@ -1,0 +1,33 @@
+name: Run quality checks
+run-name: ${{ github.actor }} triggered quality check pipeline
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - main
+      - dev
+jobs:
+  test:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+          pip install -r requirements.txt
+
+    - name: Run unit tests
+      run: |
+        pip install pytest
+        python -m pytest .
