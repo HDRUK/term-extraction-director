@@ -5,6 +5,9 @@ import time
 import os
 import requests
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 MEDCAT_HOST = os.getenv('MEDCAT_HOST')
 MVCM_HOST = os.getenv('MVCM_HOST')
@@ -36,7 +39,7 @@ def preprocess_dataset(dataset: Dataset):
     column_descriptions = [
         element.description 
         for table in dataset.structuralMetadata 
-        for element in table.elements 
+        for element in table.columns 
         if isinstance(element.description, str)
     ]
     
@@ -96,13 +99,20 @@ def call_mvcm(medical_terms: dict):
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
     mvcm_url = "%s/API/OMOP_search" % (MVCM_HOST)
-    response = requests.post(
-        mvcm_url,
-        json={"search_term": pretty_names, "search_threshold": 80},
-        auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD)
-    )
-    expanded_terms_list = [t['closely_mapped_term'] for t in response.json()]
-    return pretty_names + expanded_terms_list
+    try:
+        response = requests.post(
+            mvcm_url,
+            json={"search_term": pretty_names, "search_threshold": 80},
+            auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD)
+        )
+        expanded_terms_list = [t['closely_mapped_term'] for t in response.json()]
+        return pretty_names + expanded_terms_list
+    except:
+        print("""
+        WARNING: failed to access medical vocab mapping service, returning 
+        original list of named entities.
+        """)
+        return pretty_names
 
 def extract_and_expand_entities(medcat_annotations: dict):
     """Given a dict of named entities from MedCAT, extract the medical entities,

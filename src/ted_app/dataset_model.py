@@ -9,7 +9,6 @@ class Required(BaseModel):
 
 class Publisher(BaseModel):
     publisherName: str | None
-    publisherGatewayId: str | None
 
 class Summary(BaseModel):
     title: str
@@ -78,8 +77,7 @@ class DatasetLinkage(BaseModel):
     linkedDatasets: str | None
 
 class Linkage(BaseModel):
-    IsGeneratedUsing: str | None
-    associatedMedia: str | None
+    isGeneratedUsing: str | None
     dataUses: str | None
     isReferenceIn: str | None
     tools: str | None
@@ -95,7 +93,7 @@ class StructuralMetadataElement(BaseModel):
 class StructuralMetadata(BaseModel):
     name: str | None
     description: str | None
-    elements: list[StructuralMetadataElement]
+    columns: list[StructuralMetadataElement]
 
 class Dataset(BaseModel):
     required: Required
