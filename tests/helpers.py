@@ -94,7 +94,7 @@ def get_test_dataset():
         linkedDatasets="Name of other dataset"
     )
     linkage = Linkage(
-        IsGeneratedUsing="Something",
+        isGeneratedUsing="Something",
         associatedMedia="http://someurl.com",
         dataUses="",
         isReferenceIn="http://some_publications_url.com",
@@ -112,7 +112,7 @@ def get_test_dataset():
     structural_metadata = StructuralMetadata(
         name="table_name",
         description="description of a dataset table",
-        elements=[structural_metadata_element, structural_metadata_element]
+        columns=[structural_metadata_element, structural_metadata_element]
     )
     dataset = Dataset(
         required=required,
