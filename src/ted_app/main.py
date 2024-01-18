@@ -98,7 +98,6 @@ def call_mvcm(medical_terms: dict):
     medical concepts.
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
-    print("pretty names: %s\n" % pretty_names)
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
     try:
         response = requests.post(

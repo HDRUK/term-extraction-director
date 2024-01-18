@@ -51,7 +51,6 @@ def test_index_dataset(mock_post):
     assert response.status_code == 200
 
     response_dict = response.json()
-    print(response.json())
     assert response_dict == {
         "id": "1111",
         "extracted_terms": [
