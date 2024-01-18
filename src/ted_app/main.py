@@ -98,14 +98,32 @@ def call_mvcm(medical_terms: dict):
     medical concepts.
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
-    mvcm_url = "%s/API/OMOP_search" % (MVCM_HOST)
+    print("pretty names: %s\n" % pretty_names)
+    mvcm_url = "%s/search/omop/" % (MVCM_HOST)
     try:
         response = requests.post(
             mvcm_url,
-            json={"search_term": pretty_names, "search_threshold": 80},
+            json={
+                "search_terms": pretty_names, 
+                "concept_ancestor": "y",
+                "max_separation_descendant": 1,
+                "max_separation_ancestor": 1,
+                "concept_relationship": "n",
+                "concept_synonym": "y",
+                "search_threshold": 80
+            },
             auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD)
         )
-        expanded_terms_list = [t['closely_mapped_term'] for t in response.json()]
+        expanded_terms_list = []
+        for term in response.json():
+            if term["CONCEPT"] is not None:
+                for concept in term["CONCEPT"]:
+                    expanded_terms_list.append(concept["concept_name"])
+                    expanded_terms_list.append(concept["concept_code"])
+                    expanded_terms_list += [syn["concept_synonym_name"] for syn in concept["CONCEPT_SYNONYM"]]
+                    expanded_terms_list += [ancestor["concept_name"] for ancestor in concept["CONCEPT_ANCESTOR"]]
+                    expanded_terms_list += [ancestor["concept_code"] for ancestor in concept["CONCEPT_ANCESTOR"]]
+
         return pretty_names + expanded_terms_list
     except:
         print("""
@@ -134,7 +152,7 @@ def index_dataset(dataset: Dataset):
     st = time.time()
     document = preprocess_dataset(dataset)
     medcat_resp = call_medcat(document)
-    all_terms_list = extract_and_expand_entities(medcat_resp["result"]["annotations"])
+    all_terms_list = sorted(list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"]))))
     et = time.time()
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
@@ -147,7 +165,7 @@ def index_datasets_bulk(datasets: list[Dataset]):
     medcat_resp = call_medcat_bulk(documents)
     all_terms = []
     for dataset_resp in medcat_resp["result"]:
-        dataset_terms_list = extract_and_expand_entities(dataset_resp["annotations"])
+        dataset_terms_list = sorted(list(set(extract_and_expand_entities(dataset_resp["annotations"]))))
         all_terms.append(dataset_terms_list)
     extracted_terms = []
     for (dataset, terms) in zip(datasets, all_terms):

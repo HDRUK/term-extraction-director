@@ -237,12 +237,56 @@ def get_test_bulk_medcat_response():
 def get_test_mvcm_response():
     return [
         {
-            'closely_mapped_term': 'Diabetes (Type I or II)', 
-            'concept_id': 000000, 
-            'relationship_type': 'OMOP_hit', 
-            'search_term': 'diabetes', 
-            'similarity_score': 100.0, 
-            'vocabulary_concept_code': 'AB1111-0', 
-            'vocabulary_id': 'LOINC'
+            "search_term": "Diabetes mellitus",
+            "CONCEPT": [
+                {
+                    "concept_name": "Diabetes mellitus",
+                    "concept_id": 201820,
+                    "vocabulary_id": "SNOMED",
+                    "concept_code": "73211009",
+                    "concept_name_similarity_score": 100.0,
+                    "CONCEPT_SYNONYM": [
+                        {
+                            "concept_synonym_name": "Diabetes mellitus (disorder)",
+                            "concept_synonym_name_similarity_score": 100.0
+                        }
+                    ],
+                    "CONCEPT_ANCESTOR": [
+                        {
+                            "concept_name": "Disorder of endocrine system",
+                            "concept_id": 31821,
+                            "vocabulary_id": "SNOMED",
+                            "concept_code": "362969004",
+                            "relationship": {
+                                "relationship_type": "Ancestor",
+                                "ancestor_concept_id": 31821,
+                                "descendant_concept_id": 201820,
+                                "min_levels_of_separation": 1,
+                                "max_levels_of_separation": 1
+                            }
+                        }
+                    ],
+                    "CONCEPT_RELATIONSHIP": []
+                },
+                {
+                    "concept_name": "Diabetes mellitus",
+                    "concept_id": 40389543,
+                    "vocabulary_id": "SNOMED",
+                    "concept_code": "191044006",
+                    "concept_name_similarity_score": 100.0,
+                    "CONCEPT_SYNONYM": [
+                        {
+                            "concept_synonym_name": "Diabetes mellitus (disorder)",
+                            "concept_synonym_name_similarity_score": 100.0
+                        }
+                    ],
+                    "CONCEPT_ANCESTOR": [],
+                    "CONCEPT_RELATIONSHIP": []
+                }
+            ]
+        },
+        {
+            "search_term": "Data Set",
+            "CONCEPT": None
         }
     ]
