@@ -52,8 +52,17 @@ def test_index_dataset(mock_post):
 
     response_dict = response.json()
     assert response_dict == {
-        "id": "1111", 
-        "extracted_terms": ["Diabetes", "Diabetes (Type I or II)", "Data Set"]
+        "id": "1111",
+        "extracted_terms": [
+            "191044006",
+            "362969004",
+            "73211009",
+            "Data Set", 
+            "Diabetes", 
+            "Diabetes mellitus",
+            "Diabetes mellitus (disorder)",
+            "Disorder of endocrine system",
+        ]
     }
 
 @patch('ted_app.main.requests.post')
@@ -72,5 +81,14 @@ def test_index_datasets(mock_post):
     for dataset_resp in response_arr:
         assert dataset_resp == {
         "id": "1111", 
-        "extracted_terms": ["Diabetes", "Diabetes (Type I or II)", "Data Set"]
+        "extracted_terms": [
+            "191044006",
+            "362969004",
+            "73211009",
+            "Data Set", 
+            "Diabetes",
+            "Diabetes mellitus",
+            "Diabetes mellitus (disorder)",
+            "Disorder of endocrine system",
+        ]
     }
