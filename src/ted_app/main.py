@@ -1,26 +1,30 @@
 from fastapi import FastAPI, status
-from .dataset_model import Dataset
+from hdr_schemata.models.GWDM import Gwdm10, Gwdm11
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
 import requests
 import logging
 from dotenv import load_dotenv
+from typing import Union
 
 load_dotenv()
 
-MEDCAT_HOST = os.getenv('MEDCAT_HOST')
-MVCM_HOST = os.getenv('MVCM_HOST')
-MVCM_USER = os.getenv('MVCM_USER')
-MVCM_PASSWORD = os.getenv('MVCM_PASSWORD')
+MEDCAT_HOST = os.getenv("MEDCAT_HOST")
+MVCM_HOST = os.getenv("MVCM_HOST")
+MVCM_USER = os.getenv("MVCM_USER")
+MVCM_PASSWORD = os.getenv("MVCM_PASSWORD")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ted = FastAPI()
 
+Dataset = Union[Gwdm10, Gwdm11]
+
+
 def preprocess_dataset(dataset: Dataset):
-    """Extract fields containing free text from the dataset and return them as 
+    """Extract fields containing free text from the dataset and return them as
     one string.
     """
     title = dataset.summary.title
@@ -32,59 +36,72 @@ def preprocess_dataset(dataset: Dataset):
     column_descriptions = []
 
     table_descriptions = [
-        table.description 
-        for table in dataset.structuralMetadata 
+        table.description
+        for table in dataset.structuralMetadata
         if isinstance(table.description, str)
     ]
     column_descriptions = [
-        element.description 
-        for table in dataset.structuralMetadata 
-        for element in table.columns 
+        element.description
+        for table in dataset.structuralMetadata
+        for element in table.columns
         if isinstance(element.description, str)
     ]
-    
+
     table_descriptions = set(table_descriptions)
     column_descriptions = set(column_descriptions)
-    all_descriptions = ''
+    all_descriptions = ""
     if len(table_descriptions) > 0:
-        all_descriptions = all_descriptions + ' '.join(table_descriptions)
+        all_descriptions = all_descriptions + " ".join(table_descriptions)
     if len(column_descriptions) > 0:
-        all_descriptions = all_descriptions + ' ' + ' '.join(column_descriptions)
+        all_descriptions = all_descriptions + " " + " ".join(column_descriptions)
     # Add observation description when it is included in GDM
     # obs_description = dataset.observations.disambiguating_description
 
-    document = title + ' ' + abstract + ' ' + description + ' ' + keywords + ' ' + all_descriptions
+    document = (
+        title.root
+        + " "
+        + abstract.root
+        + " "
+        + description.root
+        + " "
+        + keywords.root
+        + " "
+        + all_descriptions
+    )
     return document
 
+
 def call_medcat(document: str):
-    """Call the MedCATservice to perform named entity recognition on document and 
+    """Call the MedCATservice to perform named entity recognition on document and
     return the response json.
     """
     api_url = "%s/api/process" % (MEDCAT_HOST)
     response = requests.post(
-        api_url, 
-        json={"content":{"text": document}}, 
-        headers={"Content-Type": "application/json"}
+        api_url,
+        json={"content": {"text": document}},
+        headers={"Content-Type": "application/json"},
     )
     return response.json()
 
+
 def call_medcat_bulk(documents: list[str]):
-    """Call the MedCATservice to perform named entity recognition on documents 
+    """Call the MedCATservice to perform named entity recognition on documents
     and return the response json.
     """
     api_url = "%s/api/process_bulk" % (MEDCAT_HOST)
     response = requests.post(
-        api_url, 
-        json={"content":[{"text": doc} for doc in documents]}, 
-        headers={"Content-Type": "application/json"}
+        api_url,
+        json={"content": [{"text": doc} for doc in documents]},
+        headers={"Content-Type": "application/json"},
     )
     return response.json()
+
 
 def extract_medical_entities(annotations: dict):
     medical_terms = {}
     other_terms = {}
     for annotation in annotations:
-        for (key, entity) in annotation.items():
+        for key, entity in annotation.items():
             if entity["meta_anns"]["Status"]["value"] == "Affirmed":
                 if any([t in MEDICAL_CATEGORIES for t in entity["types"]]):
                     medical_terms[key] = entity
@@ -92,9 +109,10 @@ def extract_medical_entities(annotations: dict):
                     other_terms[key] = entity
     return medical_terms, other_terms
 
+
 def call_mvcm(medical_terms: dict):
     """Call the medical vocabulary concept mapping service to expand the list of
-    named entities. Return a combined list of original named entities and related 
+    named entities. Return a combined list of original named entities and related
     medical concepts.
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
@@ -103,15 +121,15 @@ def call_mvcm(medical_terms: dict):
         response = requests.post(
             mvcm_url,
             json={
-                "search_terms": pretty_names, 
+                "search_terms": pretty_names,
                 "concept_ancestor": "y",
                 "max_separation_descendant": 1,
                 "max_separation_ancestor": 1,
                 "concept_relationship": "n",
                 "concept_synonym": "y",
-                "search_threshold": 80
+                "search_threshold": 80,
             },
-            auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD)
+            auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD),
         )
         expanded_terms_list = []
         for term in response.json():
@@ -119,17 +137,29 @@ def call_mvcm(medical_terms: dict):
                 for concept in term["CONCEPT"]:
                     expanded_terms_list.append(concept["concept_name"])
                     expanded_terms_list.append(concept["concept_code"])
-                    expanded_terms_list += [syn["concept_synonym_name"] for syn in concept["CONCEPT_SYNONYM"]]
-                    expanded_terms_list += [ancestor["concept_name"] for ancestor in concept["CONCEPT_ANCESTOR"]]
-                    expanded_terms_list += [ancestor["concept_code"] for ancestor in concept["CONCEPT_ANCESTOR"]]
+                    expanded_terms_list += [
+                        syn["concept_synonym_name"]
+                        for syn in concept["CONCEPT_SYNONYM"]
+                    ]
+                    expanded_terms_list += [
+                        ancestor["concept_name"]
+                        for ancestor in concept["CONCEPT_ANCESTOR"]
+                    ]
+                    expanded_terms_list += [
+                        ancestor["concept_code"]
+                        for ancestor in concept["CONCEPT_ANCESTOR"]
+                    ]
 
         return pretty_names + expanded_terms_list
     except:
-        print("""
+        print(
+            """
         WARNING: failed to access medical vocab mapping service, returning 
         original list of named entities.
-        """)
+        """
+        )
         return pretty_names
+
 
 def extract_and_expand_entities(medcat_annotations: dict):
     """Given a dict of named entities from MedCAT, extract the medical entities,
@@ -138,24 +168,29 @@ def extract_and_expand_entities(medcat_annotations: dict):
     """
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
     expanded_terms_list = call_mvcm(medical_terms)
-    other_terms_list = [t['pretty_name'] for t in other_terms.values()]
+    other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
+
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
 def read_status():
     return {"message": "Resource Available"}
+
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
 def index_dataset(dataset: Dataset):
     st = time.time()
     document = preprocess_dataset(dataset)
     medcat_resp = call_medcat(document)
-    all_terms_list = sorted(list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"]))))
+    all_terms_list = sorted(
+        list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
+    )
     et = time.time()
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
     return {"id": dataset.required.gatewayId, "extracted_terms": all_terms_list}
+
 
 @ted.post("/datasets_bulk", status_code=status.HTTP_200_OK)
 def index_datasets_bulk(datasets: list[Dataset]):
@@ -164,13 +199,16 @@ def index_datasets_bulk(datasets: list[Dataset]):
     medcat_resp = call_medcat_bulk(documents)
     all_terms = []
     for dataset_resp in medcat_resp["result"]:
-        dataset_terms_list = sorted(list(set(extract_and_expand_entities(dataset_resp["annotations"]))))
+        dataset_terms_list = sorted(
+            list(set(extract_and_expand_entities(dataset_resp["annotations"])))
+        )
         all_terms.append(dataset_terms_list)
     extracted_terms = []
-    for (dataset, terms) in zip(datasets, all_terms):
-        extracted_terms.append({"id": dataset.required.gatewayId, "extracted_terms": terms})
+    for dataset, terms in zip(datasets, all_terms):
+        extracted_terms.append(
+            {"id": dataset.required.gatewayId, "extracted_terms": terms}
+        )
     et = time.time()
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
     return extracted_terms
-    
