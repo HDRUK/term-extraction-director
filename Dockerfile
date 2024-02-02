@@ -1,5 +1,7 @@
 FROM python:3.11.6-alpine3.18
 
+RUN apk add git
+
 ENV SERVICE_NAME="ted"
 
 WORKDIR /home
