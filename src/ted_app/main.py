@@ -57,16 +57,11 @@ def preprocess_dataset(dataset: Dataset):
     # Add observation description when it is included in GDM
     # obs_description = dataset.observations.disambiguating_description
 
-    document = (
-        title.root
-        + " "
-        + abstract.root
-        + " "
-        + description.root
-        + " "
-        + keywords.root
-        + " "
-        + all_descriptions
+    def join_terms(terms):
+        return " ".join([term for term in terms if term])
+
+    document = join_terms(
+        [title.root, abstract.root, description.root, keywords.root, all_descriptions]
     )
     return document
 
