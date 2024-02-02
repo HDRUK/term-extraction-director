@@ -30,4 +30,4 @@ jobs:
             - name: Run unit tests
               run: |
                   pip install pytest
-                  python -m pytest --ignore-glob='*/hdr_schemata/*'.
+                  python -m pytest --ignore-glob='*/hdr-schemata/*'.

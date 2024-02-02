@@ -1,7 +1,4 @@
 -e git+https://github.com/HDRUK/schemata-2.git@add/GWDM/1.1#egg=hdr_schemata
-#pydantic==2.1.1
-#pydantic_core==2.4.0
-#pytest==7.4.0
 annotated-types==0.5.0
 anyio==3.7.1
 certifi==2023.7.22
