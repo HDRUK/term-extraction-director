@@ -1,5 +1,5 @@
 from fastapi import FastAPI, status
-from hdr_schemata.models.GWDM import Gwdm10, Gwdm11
+from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 ted = FastAPI()
 
-Dataset = Union[Gwdm10, Gwdm11]
+Dataset = Union[Gwdm10, Gwdm11, Gwdm12]
 
 
 def preprocess_dataset(dataset: Dataset):
