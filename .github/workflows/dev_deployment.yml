@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - 'dev'
+      - 'bes/logging'
 
 env:
   PROJECT_ID: '${{ secrets.PROJECT_ID }}'
@@ -22,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: bes/logging
 
       - name: Read VERSION file
         id: getversion
@@ -70,7 +71,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: bes/logging
 
       - name: Google Auth
         id: auth
