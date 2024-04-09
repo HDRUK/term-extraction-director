@@ -32,6 +32,11 @@ def preprocess_dataset(dataset: Dataset):
     description = dataset.summary.description
     keywords = dataset.summary.keywords
 
+    logger.info("Extracting entities for dataset with title: %s" % title)
+    logger.info("Abstract: %s" % abstract)
+    logger.info("Description: %s" % description)
+    logger.info("Keywords: %s" % keywords)
+
     table_descriptions = []
     column_descriptions = []
 
@@ -177,10 +182,13 @@ def read_status():
 def index_dataset(dataset: Dataset):
     st = time.time()
     document = preprocess_dataset(dataset)
+    logger.info("Document prepared for NER")
     medcat_resp = call_medcat(document)
+    logger.info("MedCAT returned %d entities" % len(medcat_resp["result"]["annotations"]))
     all_terms_list = sorted(
         list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
     )
+    logger.info("Expanded terms list returned.")
     et = time.time()
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
