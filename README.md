@@ -24,6 +24,9 @@ POST <TED_HOST>/datasets
 `.env.example` contains the environment variables that need to be set to enable TED to communicate with other service deployments.
 If running locally the environment variables `MEDCAT_HOST` and `MVCM_HOST` should include the port (e.g. http://localhost:8000).
 
+# Audit logging
+To enable audit logging, you must first supply a google application credentials file in the base directory. Then set AUDIT_ENABLED=1 and then supply the environment variables PROJECT_ID and TOPIC_ID with the details of the Google PubSub instance, and GOOGLE_APPLICATION_CREDENTIALS pointing to the (in-container) location of the aforementioned application_default_credentials.json file.
+
 # Testing
 
 In the containerised application, execute `pytest` in the root directory to run the tests.
