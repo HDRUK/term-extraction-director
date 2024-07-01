@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ted
+spec:
+  selector:
+    matchLabels:
+      app: ted
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ted
+    spec:
+      containers:
+        - name: ted
+          image: hdruk/ted:latest
+          ports:
+            - containerPort: 8000
+              name: ted
+      dnsPolicy: ClusterFirst
