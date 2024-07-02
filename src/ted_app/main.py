@@ -1,9 +1,11 @@
 from fastapi import FastAPI, status
-from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12
+from google.cloud import pubsub_v1
+from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12, Gwdm20
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
 import requests
+import json
 import logging
 from dotenv import load_dotenv
 from typing import Union
@@ -14,14 +16,37 @@ MEDCAT_HOST = os.getenv("MEDCAT_HOST")
 MVCM_HOST = os.getenv("MVCM_HOST")
 MVCM_USER = os.getenv("MVCM_USER")
 MVCM_PASSWORD = os.getenv("MVCM_PASSWORD")
+PROJECT_ID = os.environ.get('PROJECT_ID', None)
+TOPIC_ID = os.environ.get('TOPIC_ID', None)
+AUDIT_ENABLED = True if os.environ.get('AUDIT_ENABLED', False) in [1, '1'] else False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ted = FastAPI()
 
-Dataset = Union[Gwdm10, Gwdm11, Gwdm12]
+Dataset = Union[Gwdm10, Gwdm11, Gwdm12, Gwdm20]
 
+
+if AUDIT_ENABLED:
+    publisher = pubsub_v1.PublisherClient()
+    # The `topic_path` method creates a fully qualified identifier
+    # in the form `projects/{PROJECT_ID}/topics/{TOPIC_ID}`
+    topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
+
+
+def publish_message(action_type="", action_name="", description=""):
+    if AUDIT_ENABLED:
+        message_json = {
+            "action_type": action_type,
+            "action_name": action_name,
+            "action_service": "TERM EXTRACTION DIRECTOR API",
+            "description": description
+        }
+        encoded_json = json.dumps(message_json).encode("utf-8")
+        future = publisher.publish(topic_path, encoded_json)
+        return future.result()
+    
 
 def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
@@ -175,6 +200,7 @@ def read_status():
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
 def index_dataset(dataset: Dataset):
+    print(publish_message(action_type="POST", action_name="datasets", description="Extract entities on a single dataset"))
     st = time.time()
     document = preprocess_dataset(dataset)
     medcat_resp = call_medcat(document)
@@ -189,6 +215,7 @@ def index_dataset(dataset: Dataset):
 
 @ted.post("/datasets_bulk", status_code=status.HTTP_200_OK)
 def index_datasets_bulk(datasets: list[Dataset]):
+    print(publish_message(action_type="POST", action_name="datasets", description="Extract entities on multiple datasets"))
     st = time.time()
     documents = [preprocess_dataset(dataset) for dataset in datasets]
     medcat_resp = call_medcat_bulk(documents)
