@@ -41,7 +41,8 @@ def publish_message(action_type="", action_name="", description=""):
             "action_type": action_type,
             "action_name": action_name,
             "action_service": "TERM EXTRACTION DIRECTOR API",
-            "description": description
+            "description": description,
+            "created_at": int(time.time() * 10e6),
         }
         encoded_json = json.dumps(message_json).encode("utf-8")
         future = publisher.publish(topic_path, encoded_json)
@@ -187,7 +188,9 @@ def extract_and_expand_entities(medcat_annotations: dict):
     list of strings containing all the named entities and related medical concepts.
     """
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
-    expanded_terms_list = call_mvcm(medical_terms)
+    ### Temporary measure to disable mvcm
+    # expanded_terms_list = call_mvcm(medical_terms)
+    expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
