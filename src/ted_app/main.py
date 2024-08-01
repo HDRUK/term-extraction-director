@@ -41,7 +41,8 @@ def publish_message(action_type="", action_name="", description=""):
             "action_type": action_type,
             "action_name": action_name,
             "action_service": "TERM EXTRACTION DIRECTOR API",
-            "description": description
+            "description": description,
+            "created_at": int(time.time() * 10e6),
         }
         encoded_json = json.dumps(message_json).encode("utf-8")
         future = publisher.publish(topic_path, encoded_json)
