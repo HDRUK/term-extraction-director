@@ -188,9 +188,10 @@ def extract_and_expand_entities(medcat_annotations: dict):
     list of strings containing all the named entities and related medical concepts.
     """
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
-    ### Temporary measure to disable mvcm
-    # expanded_terms_list = call_mvcm(medical_terms)
-    expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
+    ### Uncomment to run with MVCM
+    expanded_terms_list = call_mvcm(medical_terms)
+     ### Uncomment to disable MVCM
+    #expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
