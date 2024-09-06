@@ -37,9 +37,10 @@ def test_extract_medical_entities():
     assert len(other_terms) == 1
     assert "2" in other_terms.keys()
     assert "3" not in other_terms.keys()
-
+    
+#Comment out if MVCM enabled
 @patch('ted_app.main.requests.post')
-@pytest.mark.xfail
+# @pytest.mark.xfail 
 def test_index_dataset(mock_post):
     mock_responses = [Mock(), Mock()]
     mock_responses[0].json.return_value = helpers.get_test_medcat_response()
@@ -65,9 +66,10 @@ def test_index_dataset(mock_post):
             "Disorder of endocrine system",
         ]
     }
-
+    
+# Comment out if MVCM enabled
 @patch('ted_app.main.requests.post')
-@pytest.mark.xfail
+# @pytest.mark.xfail 
 def test_index_datasets(mock_post):
     mock_responses = [Mock(), Mock()]
     mock_responses[0].json.return_value = helpers.get_test_bulk_medcat_response()
