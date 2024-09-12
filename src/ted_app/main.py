@@ -53,10 +53,10 @@ def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
     one string.
     """
-    title = dataset.summary.title
-    abstract = dataset.summary.abstract
-    description = dataset.summary.description
-    keywords = dataset.summary.keywords
+    title = str(dataset.summary.title)
+    abstract = str(dataset.summary.abstract)
+    description = str(dataset.summary.description)
+    keywords = str(dataset.summary.keywords)
 
     table_descriptions = []
     column_descriptions = []
@@ -87,7 +87,7 @@ def preprocess_dataset(dataset: Dataset):
         return " ".join([term for term in terms if term])
 
     document = join_terms(
-        [title.root, abstract.root, description.root, keywords.root, all_descriptions]
+        [title, abstract, description, keywords, all_descriptions]
     )
     return document
 
