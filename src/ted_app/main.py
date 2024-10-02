@@ -16,9 +16,9 @@ MEDCAT_HOST = os.getenv("MEDCAT_HOST")
 MVCM_HOST = os.getenv("MVCM_HOST")
 MVCM_USER = os.getenv("MVCM_USER")
 MVCM_PASSWORD = os.getenv("MVCM_PASSWORD")
-PROJECT_ID = os.environ.get('PROJECT_ID', None)
-TOPIC_ID = os.environ.get('TOPIC_ID', None)
-AUDIT_ENABLED = True if os.environ.get('AUDIT_ENABLED', False) in [1, '1'] else False
+PROJECT_ID = os.environ.get("PROJECT_ID", None)
+TOPIC_ID = os.environ.get("TOPIC_ID", None)
+AUDIT_ENABLED = True if os.environ.get("AUDIT_ENABLED", False) in [1, "1"] else False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def publish_message(action_type="", action_name="", description=""):
         encoded_json = json.dumps(message_json).encode("utf-8")
         future = publisher.publish(topic_path, encoded_json)
         return future.result()
-    
+
 
 def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
@@ -86,9 +86,7 @@ def preprocess_dataset(dataset: Dataset):
     def join_terms(terms):
         return " ".join([term for term in terms if term])
 
-    document = join_terms(
-        [title, abstract, description, keywords, all_descriptions]
-    )
+    document = join_terms([title, abstract, description, keywords, all_descriptions])
     return document
 
 
@@ -96,7 +94,9 @@ def call_medcat(document: str):
     """Call the MedCATservice to perform named entity recognition on document and
     return the response json.
     """
+    print("calling medcat")
     api_url = "%s/api/process" % (MEDCAT_HOST)
+    print(api_url)
     response = requests.post(
         api_url,
         json={"content": {"text": document}},
@@ -138,6 +138,7 @@ def call_mvcm(medical_terms: dict):
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
+    print(mvcm_url)
     try:
         response = requests.post(
             mvcm_url,
@@ -172,7 +173,8 @@ def call_mvcm(medical_terms: dict):
                     ]
 
         return pretty_names + expanded_terms_list
-    except:
+    except Exception as e:
+        print(e)
         print(
             """
         WARNING: failed to access medical vocab mapping service, returning 
@@ -190,8 +192,8 @@ def extract_and_expand_entities(medcat_annotations: dict):
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
     ### Uncomment to run with MVCM
     expanded_terms_list = call_mvcm(medical_terms)
-     ### Uncomment to disable MVCM
-    #expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
+    ### Uncomment to disable MVCM
+    # expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
@@ -204,7 +206,13 @@ def read_status():
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
 def index_dataset(dataset: Dataset):
-    print(publish_message(action_type="POST", action_name="datasets", description="Extract entities on a single dataset"))
+    print(
+        publish_message(
+            action_type="POST",
+            action_name="datasets",
+            description="Extract entities on a single dataset",
+        )
+    )
     st = time.time()
     document = preprocess_dataset(dataset)
     medcat_resp = call_medcat(document)
@@ -219,7 +227,13 @@ def index_dataset(dataset: Dataset):
 
 @ted.post("/datasets_bulk", status_code=status.HTTP_200_OK)
 def index_datasets_bulk(datasets: list[Dataset]):
-    print(publish_message(action_type="POST", action_name="datasets", description="Extract entities on multiple datasets"))
+    print(
+        publish_message(
+            action_type="POST",
+            action_name="datasets",
+            description="Extract entities on multiple datasets",
+        )
+    )
     st = time.time()
     documents = [preprocess_dataset(dataset) for dataset in datasets]
     medcat_resp = call_medcat_bulk(documents)
