@@ -1,4 +1,5 @@
 from fastapi import FastAPI, status
+import aiohttp
 from google.cloud import pubsub_v1
 from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12, Gwdm20
 from .constant_medical import MEDICAL_CATEGORIES
@@ -49,7 +50,7 @@ def publish_message(action_type="", action_name="", description=""):
         return future.result()
 
 
-def preprocess_dataset(dataset: Dataset):
+async def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
     one string.
     """
@@ -90,19 +91,20 @@ def preprocess_dataset(dataset: Dataset):
     return document
 
 
-def call_medcat(document: str):
+async def call_medcat(document: str, timeout_seconds: int = 600):
     """Call the MedCATservice to perform named entity recognition on document and
     return the response json.
     """
-    print("calling medcat")
     api_url = "%s/api/process" % (MEDCAT_HOST)
-    print(api_url)
-    response = requests.post(
-        api_url,
-        json={"content": {"text": document}},
-        headers={"Content-Type": "application/json"},
-    )
-    return response.json()
+    timeout = aiohttp.ClientTimeout(total=timeout_seconds)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(
+            api_url,
+            json={"content": {"text": document}},
+            headers={"Content-Type": "application/json"},
+        ) as response:
+            # Await the response and parse it as JSON
+            return await response.json()
 
 
 def call_medcat_bulk(documents: list[str]):
@@ -138,7 +140,8 @@ def call_mvcm(medical_terms: dict):
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
-    print(mvcm_url)
+    if len(pretty_names) == 0:
+        return pretty_names
     try:
         response = requests.post(
             mvcm_url,
@@ -174,7 +177,6 @@ def call_mvcm(medical_terms: dict):
 
         return pretty_names + expanded_terms_list
     except Exception as e:
-        print(e)
         print(
             """
         WARNING: failed to access medical vocab mapping service, returning 
@@ -205,17 +207,16 @@ def read_status():
 
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
-def index_dataset(dataset: Dataset):
-    print(
-        publish_message(
-            action_type="POST",
-            action_name="datasets",
-            description="Extract entities on a single dataset",
-        )
+async def index_dataset(dataset: Dataset):
+    publish_message(
+        action_type="POST",
+        action_name="datasets",
+        description="Extract entities on a single dataset",
     )
+
     st = time.time()
-    document = preprocess_dataset(dataset)
-    medcat_resp = call_medcat(document)
+    document = await preprocess_dataset(dataset)
+    medcat_resp = await call_medcat(document)
     all_terms_list = sorted(
         list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
     )
