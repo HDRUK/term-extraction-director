@@ -50,7 +50,13 @@ def publish_message(action_type="", action_name="", description=""):
         return future.result()
 
 
-async def preprocess_dataset(dataset: Dataset):
+async def preprocess_dataset(dataset: Dataset, truncate=True):
+
+    def limit_words(text: str, word_limit: int) -> str:
+        """Limit the number of words in the text."""
+        words = text.split()
+        return " ".join(words[:word_limit])
+
     """Extract fields containing free text from the dataset and return them as
     one string.
     """
@@ -59,20 +65,32 @@ async def preprocess_dataset(dataset: Dataset):
     description = str(dataset.summary.description)
     keywords = str(dataset.summary.keywords)
 
+    if truncate:
+        abstract = limit_words(abstract, 50)
+        description = limit_words(description, 50)
+
     table_descriptions = []
     column_descriptions = []
 
-    table_descriptions = [
-        table.description
-        for table in dataset.structuralMetadata
-        if isinstance(table.description, str)
-    ]
-    column_descriptions = [
-        element.description
-        for table in dataset.structuralMetadata
-        for element in table.columns
-        if isinstance(element.description, str)
-    ]
+    table_descriptions = (
+        [
+            table.description
+            for table in dataset.structuralMetadata
+            if isinstance(table.description, str)
+        ]
+        if not truncate
+        else []
+    )
+    column_descriptions = (
+        [
+            element.description
+            for table in dataset.structuralMetadata
+            for element in table.columns
+            if isinstance(element.description, str)
+        ]
+        if not truncate
+        else []
+    )
 
     table_descriptions = set(table_descriptions)
     column_descriptions = set(column_descriptions)
@@ -88,6 +106,7 @@ async def preprocess_dataset(dataset: Dataset):
         return " ".join([term for term in terms if term])
 
     document = join_terms([title, abstract, description, keywords, all_descriptions])
+    print(f"Length of document = {len(document)}")
     return document
 
 
