@@ -17,9 +17,9 @@ def test_read_status():
     assert response.json() == {"message": "Resource Available"}
 
 
-async def test_preprocess_dataset():
+def test_preprocess_dataset():
     test_dataset = helpers.get_test_dataset()
-    document = await preprocess_dataset(test_dataset)
+    document = preprocess_dataset(test_dataset)
     assert isinstance(document, str)
     # Test that specific phrases from the summary appear in the document
     assert document.find("a test dataset") != -1

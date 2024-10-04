@@ -1,5 +1,4 @@
 from fastapi import FastAPI, status
-import aiohttp
 from google.cloud import pubsub_v1
 from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12, Gwdm20
 from hdr_schemata.models.GWDM.v2_0 import Summary
@@ -15,7 +14,7 @@ from typing import Union, Optional
 
 load_dotenv()
 
-MEDCAT_HOST = os.getenv("MEDCAT_HOST", "http://localhost:8092")
+MEDCAT_HOST = os.getenv("MEDCAT_HOST")
 MVCM_HOST = os.getenv("MVCM_HOST")
 MVCM_USER = os.getenv("MVCM_USER")
 MVCM_PASSWORD = os.getenv("MVCM_PASSWORD")
@@ -52,7 +51,7 @@ def publish_message(action_type="", action_name="", description=""):
         return future.result()
 
 
-async def preprocess_summary(
+def preprocess_summary(
     summary: Summary,
     max_words: Optional[int] = None,
     include_description: bool = False,
@@ -81,7 +80,7 @@ async def preprocess_summary(
     return document
 
 
-async def preprocess_dataset(dataset: Dataset):
+def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
     one string.
     """
@@ -122,20 +121,19 @@ async def preprocess_dataset(dataset: Dataset):
     return document
 
 
-async def call_medcat(document: str, timeout_seconds: int = 600):
+def call_medcat(document: str, timeout_seconds: int = 600):
     """Call the MedCATservice to perform named entity recognition on document and
     return the response json.
     """
     api_url = "%s/api/process" % (MEDCAT_HOST)
-    timeout = aiohttp.ClientTimeout(total=timeout_seconds)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(
-            api_url,
-            json={"content": {"text": document}},
-            headers={"Content-Type": "application/json"},
-        ) as response:
-            # Await the response and parse it as JSON
-            return await response.json()
+
+    response = requests.post(
+        api_url,
+        json={"content": {"text": document}},
+        headers={"Content-Type": "application/json"},
+        timeout=timeout_seconds,
+    )
+    return response.json()
 
 
 def call_medcat_bulk(documents: list[str]):
@@ -238,7 +236,7 @@ def read_status():
 
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
-async def index_dataset(dataset: Dataset):
+def index_dataset(dataset: Dataset):
     publish_message(
         action_type="POST",
         action_name="datasets",
@@ -246,8 +244,8 @@ async def index_dataset(dataset: Dataset):
     )
 
     st = time.time()
-    document = await preprocess_dataset(dataset)
-    medcat_resp = await call_medcat(document)
+    document = preprocess_dataset(dataset)
+    medcat_resp = call_medcat(document)
     all_terms_list = sorted(
         list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
     )
@@ -258,15 +256,15 @@ async def index_dataset(dataset: Dataset):
 
 
 @ted.post("/summary", status_code=status.HTTP_200_OK)
-async def index_summary(summary: Summary):
+def index_summary(summary: Summary):
     publish_message(
         action_type="POST",
         action_name="summary",
         description="Extract entities from a dataset metadata summary only",
     )
     st = time.time()
-    document = await preprocess_summary(summary)
-    medcat_resp = await call_medcat(document)
+    document = preprocess_summary(summary)
+    medcat_resp = call_medcat(document)
     all_terms_list = sorted(
         list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
     )
