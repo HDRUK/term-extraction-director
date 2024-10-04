@@ -2,6 +2,8 @@ from fastapi import FastAPI, status
 import aiohttp
 from google.cloud import pubsub_v1
 from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12, Gwdm20
+from hdr_schemata.models.GWDM.v2_0 import Summary
+
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
@@ -9,7 +11,7 @@ import requests
 import json
 import logging
 from dotenv import load_dotenv
-from typing import Union
+from typing import Union, Optional
 
 load_dotenv()
 
@@ -50,13 +52,36 @@ def publish_message(action_type="", action_name="", description=""):
         return future.result()
 
 
-async def preprocess_dataset(dataset: Dataset, truncate=True):
-
+async def preprocess_summary(
+    summary: Summary,
+    max_words: Optional[int] = None,
+    include_description: bool = False,
+):
     def limit_words(text: str, word_limit: int) -> str:
         """Limit the number of words in the text."""
         words = text.split()
         return " ".join(words[:word_limit])
 
+    def join_terms(terms):
+        return " ".join([term for term in terms if term])
+
+    title = str(summary.title)
+    abstract = str(summary.abstract)
+    description = str(summary.description)
+    keywords = str(summary.keywords)
+
+    fields = [title, abstract, keywords]
+    if include_description:
+        fields.append(description)
+
+    if max_words:
+        fields = [limit_words(field, max_words) for field in fields]
+
+    document = join_terms(fields)
+    return document
+
+
+async def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
     one string.
     """
@@ -65,32 +90,20 @@ async def preprocess_dataset(dataset: Dataset, truncate=True):
     description = str(dataset.summary.description)
     keywords = str(dataset.summary.keywords)
 
-    if truncate:
-        abstract = limit_words(abstract, 50)
-        description = limit_words(description, 50)
-
     table_descriptions = []
     column_descriptions = []
 
-    table_descriptions = (
-        [
-            table.description
-            for table in dataset.structuralMetadata
-            if isinstance(table.description, str)
-        ]
-        if not truncate
-        else []
-    )
-    column_descriptions = (
-        [
-            element.description
-            for table in dataset.structuralMetadata
-            for element in table.columns
-            if isinstance(element.description, str)
-        ]
-        if not truncate
-        else []
-    )
+    table_descriptions = [
+        table.description
+        for table in dataset.structuralMetadata
+        if isinstance(table.description, str)
+    ]
+    column_descriptions = [
+        element.description
+        for table in dataset.structuralMetadata
+        for element in table.columns
+        if isinstance(element.description, str)
+    ]
 
     table_descriptions = set(table_descriptions)
     column_descriptions = set(column_descriptions)
@@ -106,7 +119,6 @@ async def preprocess_dataset(dataset: Dataset, truncate=True):
         return " ".join([term for term in terms if term])
 
     document = join_terms([title, abstract, description, keywords, all_descriptions])
-    print(f"Length of document = {len(document)}")
     return document
 
 
@@ -195,7 +207,7 @@ def call_mvcm(medical_terms: dict):
                     ]
 
         return pretty_names + expanded_terms_list
-    except Exception as e:
+    except Exception:
         print(
             """
         WARNING: failed to access medical vocab mapping service, returning 
@@ -211,9 +223,9 @@ def extract_and_expand_entities(medcat_annotations: dict):
     list of strings containing all the named entities and related medical concepts.
     """
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
-    ### Uncomment to run with MVCM
+    # Uncomment to run with MVCM
     expanded_terms_list = call_mvcm(medical_terms)
-    ### Uncomment to disable MVCM
+    # Uncomment to disable MVCM
     # expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
@@ -243,6 +255,25 @@ async def index_dataset(dataset: Dataset):
     elapsed = et - st
     logger.info("time extracting entities = %f" % elapsed)
     return {"id": dataset.required.gatewayId, "extracted_terms": all_terms_list}
+
+
+@ted.post("/summary", status_code=status.HTTP_200_OK)
+async def index_summary(summary: Summary):
+    publish_message(
+        action_type="POST",
+        action_name="summary",
+        description="Extract entities from a dataset metadata summary only",
+    )
+    st = time.time()
+    document = await preprocess_summary(summary)
+    medcat_resp = await call_medcat(document)
+    all_terms_list = sorted(
+        list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
+    )
+    et = time.time()
+    elapsed = et - st
+    logger.info("time extracting entities = %f" % elapsed)
+    return {"extracted_terms": all_terms_list}
 
 
 @ted.post("/datasets_bulk", status_code=status.HTTP_200_OK)
