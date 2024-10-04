@@ -15,7 +15,7 @@ from typing import Union, Optional
 
 load_dotenv()
 
-MEDCAT_HOST = os.getenv("MEDCAT_HOST")
+MEDCAT_HOST = os.getenv("MEDCAT_HOST", "http://localhost:8092")
 MVCM_HOST = os.getenv("MVCM_HOST")
 MVCM_USER = os.getenv("MVCM_USER")
 MVCM_PASSWORD = os.getenv("MVCM_PASSWORD")
