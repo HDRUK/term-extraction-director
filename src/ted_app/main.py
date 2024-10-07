@@ -1,6 +1,8 @@
 from fastapi import FastAPI, status
 from google.cloud import pubsub_v1
 from hdr_schemata.models.GWDM import Gwdm10, Gwdm11, Gwdm12, Gwdm20
+from hdr_schemata.models.GWDM.v2_0 import Summary
+
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
@@ -8,7 +10,7 @@ import requests
 import json
 import logging
 from dotenv import load_dotenv
-from typing import Union
+from typing import Union, Optional
 
 load_dotenv()
 
@@ -16,9 +18,9 @@ MEDCAT_HOST = os.getenv("MEDCAT_HOST")
 MVCM_HOST = os.getenv("MVCM_HOST")
 MVCM_USER = os.getenv("MVCM_USER")
 MVCM_PASSWORD = os.getenv("MVCM_PASSWORD")
-PROJECT_ID = os.environ.get('PROJECT_ID', None)
-TOPIC_ID = os.environ.get('TOPIC_ID', None)
-AUDIT_ENABLED = True if os.environ.get('AUDIT_ENABLED', False) in [1, '1'] else False
+PROJECT_ID = os.environ.get("PROJECT_ID", None)
+TOPIC_ID = os.environ.get("TOPIC_ID", None)
+AUDIT_ENABLED = True if os.environ.get("AUDIT_ENABLED", False) in [1, "1"] else False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,7 +49,36 @@ def publish_message(action_type="", action_name="", description=""):
         encoded_json = json.dumps(message_json).encode("utf-8")
         future = publisher.publish(topic_path, encoded_json)
         return future.result()
-    
+
+
+def preprocess_summary(
+    summary: Summary,
+    max_words: Optional[int] = None,
+    include_description: bool = False,
+):
+    def limit_words(text: str, word_limit: int) -> str:
+        """Limit the number of words in the text."""
+        words = text.split()
+        return " ".join(words[:word_limit])
+
+    def join_terms(terms):
+        return " ".join([term for term in terms if term])
+
+    title = str(summary.title)
+    abstract = str(summary.abstract)
+    description = str(summary.description)
+    keywords = str(summary.keywords)
+
+    fields = [title, abstract, keywords]
+    if include_description:
+        fields.append(description)
+
+    if max_words:
+        fields = [limit_words(field, max_words) for field in fields]
+
+    document = join_terms(fields)
+    return document
+
 
 def preprocess_dataset(dataset: Dataset):
     """Extract fields containing free text from the dataset and return them as
@@ -86,21 +117,21 @@ def preprocess_dataset(dataset: Dataset):
     def join_terms(terms):
         return " ".join([term for term in terms if term])
 
-    document = join_terms(
-        [title, abstract, description, keywords, all_descriptions]
-    )
+    document = join_terms([title, abstract, description, keywords, all_descriptions])
     return document
 
 
-def call_medcat(document: str):
+def call_medcat(document: str, timeout_seconds: int = 600):
     """Call the MedCATservice to perform named entity recognition on document and
     return the response json.
     """
     api_url = "%s/api/process" % (MEDCAT_HOST)
+
     response = requests.post(
         api_url,
         json={"content": {"text": document}},
         headers={"Content-Type": "application/json"},
+        timeout=timeout_seconds,
     )
     return response.json()
 
@@ -138,6 +169,8 @@ def call_mvcm(medical_terms: dict):
     """
     pretty_names = [t["pretty_name"] for t in medical_terms.values()]
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
+    if len(pretty_names) == 0:
+        return pretty_names
     try:
         response = requests.post(
             mvcm_url,
@@ -172,7 +205,7 @@ def call_mvcm(medical_terms: dict):
                     ]
 
         return pretty_names + expanded_terms_list
-    except:
+    except Exception:
         print(
             """
         WARNING: failed to access medical vocab mapping service, returning 
@@ -188,10 +221,10 @@ def extract_and_expand_entities(medcat_annotations: dict):
     list of strings containing all the named entities and related medical concepts.
     """
     medical_terms, other_terms = extract_medical_entities(medcat_annotations)
-    ### Uncomment to run with MVCM
+    # Uncomment to run with MVCM
     expanded_terms_list = call_mvcm(medical_terms)
-     ### Uncomment to disable MVCM
-    #expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
+    # Uncomment to disable MVCM
+    # expanded_terms_list = [t["pretty_name"] for t in medical_terms.values()]
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
@@ -204,7 +237,12 @@ def read_status():
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
 def index_dataset(dataset: Dataset):
-    print(publish_message(action_type="POST", action_name="datasets", description="Extract entities on a single dataset"))
+    publish_message(
+        action_type="POST",
+        action_name="datasets",
+        description="Extract entities on a single dataset",
+    )
+
     st = time.time()
     document = preprocess_dataset(dataset)
     medcat_resp = call_medcat(document)
@@ -217,9 +255,34 @@ def index_dataset(dataset: Dataset):
     return {"id": dataset.required.gatewayId, "extracted_terms": all_terms_list}
 
 
+@ted.post("/summary", status_code=status.HTTP_200_OK)
+def index_summary(summary: Summary):
+    publish_message(
+        action_type="POST",
+        action_name="summary",
+        description="Extract entities from a dataset metadata summary only",
+    )
+    st = time.time()
+    document = preprocess_summary(summary)
+    medcat_resp = call_medcat(document)
+    all_terms_list = sorted(
+        list(set(extract_and_expand_entities(medcat_resp["result"]["annotations"])))
+    )
+    et = time.time()
+    elapsed = et - st
+    logger.info("time extracting entities = %f" % elapsed)
+    return {"extracted_terms": all_terms_list}
+
+
 @ted.post("/datasets_bulk", status_code=status.HTTP_200_OK)
 def index_datasets_bulk(datasets: list[Dataset]):
-    print(publish_message(action_type="POST", action_name="datasets", description="Extract entities on multiple datasets"))
+    print(
+        publish_message(
+            action_type="POST",
+            action_name="datasets",
+            description="Extract entities on multiple datasets",
+        )
+    )
     st = time.time()
     documents = [preprocess_dataset(dataset) for dataset in datasets]
     medcat_resp = call_medcat_bulk(documents)
