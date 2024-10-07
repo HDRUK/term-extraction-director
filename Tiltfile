@@ -4,19 +4,16 @@
 ##
 
 # Load in any locally set config
-cfg = read_json('tiltconf.json')
+cfg = read_json("tiltconf.json")
 
 docker_build(
-    ref='hdruk/' + cfg.get('name'),
-    context='.',
+    ref="hdruk/" + cfg.get("name"),
+    context=".",
     live_update=[
-        sync('.', '/home'),
-    ]
+        sync(".", "/home"),
+    ],
 )
 
-k8s_yaml('chart/' + cfg.get('name') + '/deployment.yaml')
-k8s_yaml('chart/' + cfg.get('name') + '/service.yaml')
-k8s_resource(
-    cfg.get('name'),
-    port_forwards=8001
-)
+k8s_yaml("chart/" + cfg.get("name") + "/deployment.yaml")
+k8s_yaml("chart/" + cfg.get("name") + "/service.yaml")
+k8s_resource(cfg.get("name"), port_forwards=8001)
