@@ -1,17 +1,7 @@
 FROM python:3.11.6-alpine3.18
 
 # Install build dependencies
-RUN apk add --no-cache \
-    gcc \
-    g++ \
-    musl-dev \
-    libatomic \
-    linux-headers \
-    git
-
-# Install grpcio and other Python dependencies
-RUN pip install grpcio
-
+RUN apk add git
 
 ENV SERVICE_NAME="ted"
 
