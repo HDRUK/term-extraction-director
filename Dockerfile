@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 EXPOSE 8000
 
 ##--reload
-CMD ["uvicorn", "src.ted_app.main:ted", "--host", "0.0.0.0","--workers", "4"]
+CMD ["uvicorn", "src.ted_app.main:ted", "--host", "0.0.0.0"]
