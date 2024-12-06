@@ -178,7 +178,7 @@ def call_mvcm(medical_terms: dict):
                 "search_terms": pretty_names,
                 "concept_ancestor": "y",
                 "max_separation_descendant": 1,
-                "max_separation_ancestor": 0,
+                "max_separation_ancestor": 2,
                 "concept_relationship": "n",
                 "concept_synonym": "n",
                 "search_threshold": 95,
