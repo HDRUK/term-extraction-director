@@ -175,6 +175,7 @@ def call_mvcm(medical_terms: dict):
         response = requests.post(
             mvcm_url,
             json={
+                "vocabulary_id": "",
                 "search_terms": pretty_names,
                 "concept_ancestor": "y",
                 "max_separation_descendant": 0,
