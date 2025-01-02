@@ -175,14 +175,14 @@ def call_mvcm(medical_terms: dict):
         response = requests.post(
             mvcm_url,
             json={
-                "vocabulary_id": "",
                 "search_terms": pretty_names,
+                "vocabulary_id": "",
                 "concept_ancestor": "y",
                 "max_separation_descendant": 0,
                 "max_separation_ancestor": 1,
                 "concept_relationship": "n",
                 "concept_synonym": "n",
-                "search_threshold": 95,
+                "search_threshold": 95
             },
             auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD),
         )
