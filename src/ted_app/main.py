@@ -180,9 +180,7 @@ def call_mvcm(medical_terms: dict):
             "max_separation_descendant": 0,
             "max_separation_ancestor": 1,
             "concept_relationship": "n",
-            "concept_relationship_types": ["Concept same_as to"],
             "concept_synonym": "n",
-            "concept_synonym_language_concept_id": "4180186",
             "search_threshold": 95
         }
         
