@@ -6,7 +6,6 @@ from hdr_schemata.models.GWDM.v2_0 import Summary
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import requests
 import json
 import logging
@@ -172,65 +171,58 @@ def call_mvcm(medical_terms: dict):
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
     if len(pretty_names) == 0:
         return pretty_names
-    try:
-        # Define the payload for the POST request
-        payload = {
-            "search_terms": pretty_names,
-            "concept_ancestor": "y",
-            "max_separation_descendant": 0,
-            "max_separation_ancestor": 1,
-            "concept_relationship": "n",
-            "concept_synonym": "n",
-            "search_threshold": 95
-        }
-        
-        # Make the POST request with retry logic
-        response = post_with_retry(
-            mvcm_url,
-            json_data=payload,
-            auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD),
-        )
-        expanded_terms_list = []
-        for term in response.json():
-            if term["CONCEPT"] is not None:
-                for concept in term["CONCEPT"]:
-                    expanded_terms_list.append(concept["concept_name"])
-                    expanded_terms_list.append(concept["concept_code"])
-                    expanded_terms_list += [
-                        syn["concept_synonym_name"]
-                        for syn in concept["CONCEPT_SYNONYM"]
-                    ]
-                    expanded_terms_list += [
-                        ancestor["concept_name"]
-                        for ancestor in concept["CONCEPT_ANCESTOR"]
-                    ]
-                    expanded_terms_list += [
-                        ancestor["concept_code"]
-                        for ancestor in concept["CONCEPT_ANCESTOR"]
-                    ]
-        
-        return pretty_names + expanded_terms_list
 
-    except Exception as e:
-        print(
-            f"""
-        WARNING: failed to access medical vocab mapping service: {str(e)}
-        Returning original list of named entities.
-        """
-        )
-        return pretty_names
-    
-def post_with_retry(url, json_data, auth):
-    response = requests.post(url, json=json_data, auth=auth)
-    response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
-    return response
+    # Define payload for the POST request
+    payload = {
+        "search_terms": pretty_names,
+        "concept_ancestor": "y",
+        "max_separation_descendant": 1,
+        "max_separation_ancestor": 2,
+        "concept_relationship": "n",
+        "concept_synonym": "n",
+        "search_threshold": 95,
+    }
 
-# Define the retry logic for the POST request
-@retry(
-    stop=stop_after_attempt(3),  # Retry up to 3 times
-    wait=wait_exponential(multiplier=1, min=2, max=20),  # Exponential backoff
-    retry=retry_if_exception_type(requests.exceptions.RequestException),  # Retry on request exceptions
-)
+    # Attempt the request twice
+    for attempt in range(3):
+        try:
+            response = requests.post(
+                mvcm_url,
+                json=payload,
+                auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD),
+            )
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            expanded_terms_list = []
+            for term in response.json():
+                if term["CONCEPT"] is not None:
+                    for concept in term["CONCEPT"]:
+                        expanded_terms_list.append(concept["concept_name"])
+                        expanded_terms_list.append(concept["concept_code"])
+                        expanded_terms_list += [
+                            syn["concept_synonym_name"]
+                            for syn in concept["CONCEPT_SYNONYM"]
+                        ]
+                        expanded_terms_list += [
+                            ancestor["concept_name"]
+                            for ancestor in concept["CONCEPT_ANCESTOR"]
+                        ]
+                        expanded_terms_list += [
+                            ancestor["concept_code"]
+                            for ancestor in concept["CONCEPT_ANCESTOR"]
+                        ]
+
+            return pretty_names + expanded_terms_list
+        except Exception as e:
+            # Log the error and retry if it's the first attempt
+            print(f"Attempt {attempt + 1} failed: {str(e)}")
+            if attempt == 1:  # Second attempt also failed
+                print(
+                    """
+                WARNING: failed to access medical vocab mapping service after two attempts,
+                returning original list of named entities.
+                """
+                )
+                return pretty_names
 
 def extract_and_expand_entities(medcat_annotations: dict):
     """Given a dict of named entities from MedCAT, extract the medical entities,
@@ -245,6 +237,7 @@ def extract_and_expand_entities(medcat_annotations: dict):
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
+
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
 def read_status():
