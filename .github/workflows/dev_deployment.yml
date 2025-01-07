@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - "dev"
+      - "GAT-5817"
 
 env:
   PROJECT_ID: "${{ secrets.PROJECT_ID }}"
@@ -24,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: GAT-5817
 
       - name: Read VERSION file
         id: getversion
@@ -73,7 +74,7 @@ jobs:
         id: checkout
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: GAT-5817
 
       - name: Google Auth
         id: auth
