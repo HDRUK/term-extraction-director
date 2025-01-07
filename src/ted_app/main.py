@@ -221,6 +221,18 @@ def call_mvcm(medical_terms: dict):
         """
         )
         return pretty_names
+    
+def post_with_retry(url, json_data, auth):
+    response = requests.post(url, json=json_data, auth=auth)
+    response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
+    return response
+
+# Define the retry logic for the POST request
+@retry(
+    stop=stop_after_attempt(3),  # Retry up to 3 times
+    wait=wait_exponential(multiplier=1, min=2, max=20),  # Exponential backoff
+    retry=retry_if_exception_type(requests.exceptions.RequestException),  # Retry on request exceptions
+)
 
 def extract_and_expand_entities(medcat_annotations: dict):
     """Given a dict of named entities from MedCAT, extract the medical entities,
@@ -235,18 +247,6 @@ def extract_and_expand_entities(medcat_annotations: dict):
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
-
-def post_with_retry(url, json_data, auth):
-    response = requests.post(url, json=json_data, auth=auth)
-    response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
-    return response
-
-# Define the retry logic for the POST request
-@retry(
-    stop=stop_after_attempt(3),  # Retry up to 3 times
-    wait=wait_exponential(multiplier=1, min=2, max=20),  # Exponential backoff
-    retry=retry_if_exception_type(requests.exceptions.RequestException),  # Retry on request exceptions
-)
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
 def read_status():
