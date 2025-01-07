@@ -6,6 +6,7 @@ from hdr_schemata.models.GWDM.v2_0 import Summary
 from .constant_medical import MEDICAL_CATEGORIES
 import time
 import os
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import requests
 import json
 import logging
@@ -171,20 +172,28 @@ def call_mvcm(medical_terms: dict):
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
     if len(pretty_names) == 0:
         return pretty_names
+    
     try:
-        response = requests.post(
+        # Define the payload for the POST request
+        payload = {
+            "search_terms": pretty_names,
+            "concept_ancestor": "y",
+            "max_separation_descendant": 0,
+            "max_separation_ancestor": 1,
+            "concept_relationship": "n",
+            "concept_relationship_types": ["Concept same_as to"],
+            "concept_synonym": "n",
+            "concept_synonym_language_concept_id": "4180186",
+            "search_threshold": 95
+        }
+        
+        # Make the POST request with retry logic
+        response = post_with_retry(
             mvcm_url,
-            json={
-                "search_terms": pretty_names,
-                "concept_ancestor": "y",
-                "max_separation_descendant": 1,
-                "max_separation_ancestor": 2,
-                "concept_relationship": "n",
-                "concept_synonym": "n",
-                "search_threshold": 95,
-            },
+            json_data=payload,
             auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD),
         )
+        
         expanded_terms_list = []
         for term in response.json():
             if term["CONCEPT"] is not None:
@@ -203,17 +212,17 @@ def call_mvcm(medical_terms: dict):
                         ancestor["concept_code"]
                         for ancestor in concept["CONCEPT_ANCESTOR"]
                     ]
-
+        
         return pretty_names + expanded_terms_list
-    except Exception:
+    
+    except Exception as e:
         print(
-            """
-        WARNING: failed to access medical vocab mapping service, returning 
-        original list of named entities.
+            f"""
+        WARNING: failed to access medical vocab mapping service: {str(e)}
+        Returning original list of named entities.
         """
         )
         return pretty_names
-
 
 def extract_and_expand_entities(medcat_annotations: dict):
     """Given a dict of named entities from MedCAT, extract the medical entities,
@@ -228,6 +237,18 @@ def extract_and_expand_entities(medcat_annotations: dict):
     other_terms_list = [t["pretty_name"] for t in other_terms.values()]
     all_terms_list = expanded_terms_list + other_terms_list
     return all_terms_list
+
+def post_with_retry(url, json_data, auth):
+    response = requests.post(url, json=json_data, auth=auth)
+    response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
+    return response
+
+# Define the retry logic for the POST request
+@retry(
+    stop=stop_after_attempt(3),  # Retry up to 3 times
+    wait=wait_exponential(multiplier=1, min=2, max=20),  # Exponential backoff
+    retry=retry_if_exception_type(requests.exceptions.RequestException),  # Retry on request exceptions
+)
 
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
