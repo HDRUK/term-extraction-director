@@ -162,7 +162,7 @@ def extract_medical_entities(annotations: dict):
     return medical_terms, other_terms
 
 
-def call_mvcm(medical_terms: dict):
+def call_mvcm(medical_terms: dict, max_retries: int = 2):
     """Call the medical vocabulary concept mapping service to expand the list of
     named entities. Return a combined list of original named entities and related
     medical concepts.
@@ -176,15 +176,15 @@ def call_mvcm(medical_terms: dict):
     payload = {
         "search_terms": pretty_names,
         "concept_ancestor": "y",
-        "max_separation_descendant": 1,
-        "max_separation_ancestor": 2,
+        "max_separation_descendant": 0,
+        "max_separation_ancestor": 1,
         "concept_relationship": "n",
-        "concept_synonym": "n",
+        "concept_synonym": "y",
         "search_threshold": 95,
     }
 
-    # Attempt the request twice
-    for attempt in range(3):
+    # Attempt the request up to max_retries times
+    for attempt in range(1, max_retries + 1):
         try:
             response = requests.post(
                 mvcm_url,
@@ -213,13 +213,12 @@ def call_mvcm(medical_terms: dict):
 
             return pretty_names + expanded_terms_list
         except Exception as e:
-            # Log the error and retry if it's the first attempt
-            print(f"Attempt {attempt + 1} failed: {str(e)}")
-            if attempt == 1:  # Second attempt also failed
+            print(f"Attempt {attempt} failed: {str(e)}")
+            if attempt == max_retries:  # Last attempt also failed
                 print(
                     """
-                WARNING: failed to access medical vocab mapping service after two attempts,
-                returning original list of named entities.
+                WARNING: failed to access medical vocab mapping service after 
+                all retry attempts, returning original list of named entities.
                 """
                 )
                 return pretty_names
