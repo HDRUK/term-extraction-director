@@ -172,7 +172,6 @@ def call_mvcm(medical_terms: dict):
     mvcm_url = "%s/search/omop/" % (MVCM_HOST)
     if len(pretty_names) == 0:
         return pretty_names
-    
     try:
         # Define the payload for the POST request
         payload = {
@@ -193,7 +192,6 @@ def call_mvcm(medical_terms: dict):
             json_data=payload,
             auth=requests.auth.HTTPBasicAuth(MVCM_USER, MVCM_PASSWORD),
         )
-        
         expanded_terms_list = []
         for term in response.json():
             if term["CONCEPT"] is not None:
@@ -214,7 +212,7 @@ def call_mvcm(medical_terms: dict):
                     ]
         
         return pretty_names + expanded_terms_list
-    
+
     except Exception as e:
         print(
             f"""
@@ -249,7 +247,6 @@ def post_with_retry(url, json_data, auth):
     wait=wait_exponential(multiplier=1, min=2, max=20),  # Exponential backoff
     retry=retry_if_exception_type(requests.exceptions.RequestException),  # Retry on request exceptions
 )
-
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
 def read_status():
