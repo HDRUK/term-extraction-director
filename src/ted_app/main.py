@@ -50,7 +50,6 @@ def publish_message(action_type="", action_name="", description=""):
             encoded_json = json.dumps(message_json).encode("utf-8")
             future = publisher.publish(topic_path, encoded_json)
             result = future.result()
-            logger.info(f"Message published successfully: {result}")
             return result
         except Exception as e:
             logger.error(f"Failed to publish message: {e}")
@@ -59,6 +58,9 @@ def publish_message(action_type="", action_name="", description=""):
 
 
 def preprocess_summary(summary: Summary, max_words: Optional[int] = None, include_description: bool = False):
+    """Extract fields containing free text from a summary object and return them as
+    one string.
+    """
     try:
         def limit_words(text: str, word_limit: int) -> str:
             """Limit the number of words in the text."""
@@ -87,7 +89,7 @@ def preprocess_summary(summary: Summary, max_words: Optional[int] = None, includ
         raise HTTPException(status_code=400, detail="Error processing summary")
 
 def preprocess_dataset(dataset: Dataset):
-    """Extract fields containing free text from the dataset and return them as
+    """Extract fields containing free text from a dataset object and return them as
     one string.
     """
     try:
@@ -284,12 +286,7 @@ def call_mvcm(medical_terms: dict, max_retries: int = 2):
         except Exception as e:
             print(f"Attempt {attempt} failed: {str(e)}")
             if attempt == max_retries:  # Last attempt also failed
-                print(
-                    """
-                WARNING: failed to access medical vocab mapping service after 
-                all retry attempts, returning original list of named entities.
-                """
-                )
+                print("WARNING: failed to access medical vocab mapping service after all retry attempts, returning original list of named entities.")
                 return pretty_names
 
 def extract_and_expand_entities(medcat_annotations: dict):
@@ -320,6 +317,7 @@ def extract_and_expand_entities(medcat_annotations: dict):
     except Exception as e:
         # Handle any unexpected errors
         logger.error(f"Unexpected error while extracting or expanding entities: {e}")
+        print("expansion failed for:", medcat_annotations)
         raise HTTPException(
             status_code=500, detail="Error extracting and expanding entities"
         )
