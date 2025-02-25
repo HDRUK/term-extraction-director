@@ -3,3 +3,4 @@ __pycache__/
 *.py[cod]
 *.pytest_cache
 application_default_credentials.json
+node_modules/
