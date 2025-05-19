@@ -1,4 +1,4 @@
-FROM python:3.11.6-alpine3.18
+FROM python:3.11-alpine3.21
 
 # Install build dependencies
 RUN apk add --no-cache \
