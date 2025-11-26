@@ -233,7 +233,7 @@ def extract_and_expand_entities(medcat_annotations: dict):
 
 @ted.get("/status", status_code=status.HTTP_200_OK)
 def read_status():
-    return {"message": "Resource Available"}
+    return {"message": "OK"}
 
 
 @ted.post("/datasets", status_code=status.HTTP_200_OK)
