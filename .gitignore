@@ -4,3 +4,4 @@ __pycache__/
 *.pytest_cache
 application_default_credentials.json
 node_modules/
+.VSCodeCounter/
