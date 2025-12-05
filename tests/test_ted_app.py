@@ -14,7 +14,7 @@ client = TestClient(ted)
 def test_read_status():
     response = client.get("/status")
     assert response.status_code == 200
-    assert response.json() == {"message": "Resource Available"}
+    assert response.json() == {"message": "OK"}
 
 
 def test_preprocess_dataset():

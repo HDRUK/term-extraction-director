@@ -1,4 +1,4 @@
--e git+https://github.com/HDRUK/schemata-2.git@master#egg=hdr_schemata
+-e git+https://github.com/HDRUK/schemata.git@main#egg=hdr_schemata
 annotated-types==0.5.0
 anyio==3.7.1
 certifi==2023.7.22
