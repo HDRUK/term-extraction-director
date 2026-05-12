@@ -16,4 +16,8 @@ docker_build(
 
 k8s_yaml("chart/" + cfg.get("name") + "/deployment.yaml")
 k8s_yaml("chart/" + cfg.get("name") + "/service.yaml")
-k8s_resource(cfg.get("name"), port_forwards=8001)
+k8s_resource(
+    cfg.get("name"), 
+    port_forwards=8001,
+    labels=["API"]
+)
