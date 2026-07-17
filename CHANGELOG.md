@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/HDRUK/term-extraction-director/compare/v1.4.0...v1.4.1) (2026-07-17)
+
+### 🐛 Bug Fixes
+
+* **GAT-9057:** added pipeline for automated Jira release to the registry apps (#94) ([8a0f7b7](https://github.com/HDRUK/term-extraction-director/commit/8a0f7b7794581399818f62718878df8e066f2fd4)), closes [GAT-9057](undefinedGAT-9057)
+
 ## [1.4.0](https://github.com/HDRUK/term-extraction-director/compare/v1.3.2...v1.4.0) (2026-07-17)
 
 ### ✨ Features
