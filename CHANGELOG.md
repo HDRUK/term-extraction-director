@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/HDRUK/term-extraction-director/compare/v1.4.1...v1.4.2) (2026-10-05)
+
+### 🐛 Bug Fixes
+
+* **GAT-8642:** update the base OS version (#96) ([50005a7](https://github.com/HDRUK/term-extraction-director/commit/50005a77e12805b94961da3a9f426188c5a2f38b)), closes [GAT-8642](undefinedGAT-8642)
+
 ## [1.4.1](https://github.com/HDRUK/term-extraction-director/compare/v1.4.0...v1.4.1) (2026-07-17)
 
 ### 🐛 Bug Fixes
